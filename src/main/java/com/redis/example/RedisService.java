@@ -161,4 +161,17 @@ public class RedisService {
 		
 		return result;
 	}
+
+	public SearchResult searchCardNumberWithQueryBuilders(String number) {
+		// FT.SEARCH idx_cust "(@cc1:{6759\\-6040\\-5042\\-5701\\-836})|(@cc2:{6759\\-6040\\-5042\\-5701\\-836})"
+		RediSearchCommands rediSearch = (RediSearchCommands) jedis;
+		
+		String formattedNumber = RediSearchUtil.escape(number);
+		Node n = QueryBuilders.union().add("cc1", Values.tags(formattedNumber)).add("cc2", Values.tags(formattedNumber));
+		Query q = new Query(n.toString(Node.Parenthesize.ALWAYS)).limit(0, 10);
+        
+        	SearchResult result = rediSearch.ftSearch(INDEX_CUSTOMER, q);
+		
+		return result;
+	}
 }
