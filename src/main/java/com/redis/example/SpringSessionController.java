@@ -139,7 +139,7 @@ public class SpringSessionController {
 		}
 		else {
 			request.getSession().setAttribute("queryResults", 
-					prettyPrintSearchResult(redisService.searchCardNumber(number)));
+					prettyPrintSearchResult(redisService.searchCardNumberWithQueryBuilders(number)));
 		}
 		
 		return "redirect:/";
