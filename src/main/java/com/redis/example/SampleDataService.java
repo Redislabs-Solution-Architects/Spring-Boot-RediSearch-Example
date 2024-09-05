@@ -1,7 +1,10 @@
 package com.redis.example;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +39,13 @@ public class SampleDataService {
 		
 		Faker faker = new Faker(Locale.US);
 		
+		Calendar cal = Calendar.getInstance();
+		Date maxDate = cal.getTime();
+		cal.add(Calendar.YEAR, -10);
+		Date minDate = cal.getTime();
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+		
 		// single thread
 		for(int i = 0; i < numentries; i++) {
 			Map<String, String> customerDetails = new HashMap<String, String>();
@@ -49,6 +59,10 @@ public class SampleDataService {
 			customerDetails.put("E-mail", faker.internet().emailAddress());
 			customerDetails.put("Credit card 1", faker.finance().creditCard());
 			customerDetails.put("Credit card 2", faker.finance().creditCard());
+			
+			Date regDate = faker.date().between(minDate, maxDate);
+			customerDetails.put("Registration date epoch", String.valueOf(regDate.getTime()));
+			customerDetails.put("Registration date", sdf.format(regDate));
 			
 			redisService.addCustomer("cust:" + cif, customerDetails);
 			

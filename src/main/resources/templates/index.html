@@ -77,6 +77,17 @@
 						type="submit" value="Search" />
 				</form>
 			</div>
+			<br>
+			<div>
+				Search by registration date <br> <sub>Numeric search allows range searches</sub>
+				<form th:action="@{/searchRegistrationDate}" method="POST">
+					From
+					<input name="regStart" cols="6" rows="1" th:value="${regStart}"></input> 
+					to
+					<input name="regEnd" cols="6" rows="1" th:value="${regEnd}"></input> 
+					<input type="submit" value="Search" />
+				</form>
+			</div>
 		</section>
 	</div>
 	<div class="rightcol">

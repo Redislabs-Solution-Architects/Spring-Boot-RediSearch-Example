@@ -1,5 +1,7 @@
 package com.redis.example;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -8,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.search.FTCreateParams;
 import redis.clients.jedis.search.IndexDefinition;
 import redis.clients.jedis.search.IndexOptions;
@@ -67,7 +68,8 @@ public class RedisService {
 	        .addField(lastName).as("lastname")
 	        .addTagField("CIF").as("cif")
 	        .addTagField("Credit card 1").as("cc1")
-	        .addTagField("Credit card 2").as("cc2");
+	        .addTagField("Credit card 2").as("cc2")
+	        .addNumericField("Registration date epoch").as("regdate");
 
 			IndexDefinition def = new IndexDefinition()
 			        .setPrefixes(new String[]{"cust:"});
@@ -161,7 +163,7 @@ public class RedisService {
 		
 		return result;
 	}
-
+	
 	public SearchResult searchCardNumberWithQueryBuilders(String number) {
 		// FT.SEARCH idx_cust "(@cc1:{6759\\-6040\\-5042\\-5701\\-836})|(@cc2:{6759\\-6040\\-5042\\-5701\\-836})"
 		RediSearchCommands rediSearch = (RediSearchCommands) jedis;
@@ -170,8 +172,43 @@ public class RedisService {
 		Node n = QueryBuilders.union().add("cc1", Values.tags(formattedNumber)).add("cc2", Values.tags(formattedNumber));
 		Query q = new Query(n.toString(Node.Parenthesize.ALWAYS)).limit(0, 10);
         
-        	SearchResult result = rediSearch.ftSearch(INDEX_CUSTOMER, q);
+        SearchResult result = rediSearch.ftSearch(INDEX_CUSTOMER, q);
 		
+		return result;
+	}
+	
+	public SearchResult searchRegistrationBetweenDate(Date from, Date to) {
+		// FT.SEARCH idx_cust "@regdate:[147609299246 1476092992469]" SORTBY regdate ASC
+		RediSearchCommands rediSearch = (RediSearchCommands) jedis;
+		
+		// allow search within the current day. i.e.g [day1time00 day2time00]
+		if(from.getTime() == to.getTime()) {
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(to);
+			cal.add(Calendar.DATE, 1);
+			to = cal.getTime();
+		}
+		
+		Query q = new Query("@regdate:[" + String.valueOf(from.getTime()) + " " + String.valueOf(to.getTime()) + "]").setSortBy("regdate", true).limit(0, 10);
+		SearchResult result = rediSearch.ftSearch(INDEX_CUSTOMER, q);
+		return result;
+	}
+
+	public SearchResult searchRegistrationBetweenDateWithQueryBuilders(Date from, Date to) {
+		// FT.SEARCH idx_cust "@regdate:[1603082217190 1603082217195]" SORTBY regdate ASC
+		RediSearchCommands rediSearch = (RediSearchCommands) jedis;
+		
+		// allow search within the current day. i.e.g [day1time00..day2time00]
+		if(from.getTime() == to.getTime()) {
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(to);
+			cal.add(Calendar.DATE, 1);
+			to = cal.getTime();
+		}
+		
+		Node n = QueryBuilders.intersect().add("regdate", Values.between(from.getTime(), to.getTime()));
+		Query q = new Query(n.toString()).setSortBy("regdate", true).limit(0, 10);
+		SearchResult result = rediSearch.ftSearch(INDEX_CUSTOMER, q);
 		return result;
 	}
 }

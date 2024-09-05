@@ -1,5 +1,8 @@
 package com.redis.example;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.ListIterator;
 import java.util.Map.Entry;
 
@@ -63,6 +66,18 @@ public class SpringSessionController {
 		model.addAttribute("fullText", session.getAttribute("fullText"));
 		model.addAttribute("name", session.getAttribute("name"));
 		model.addAttribute("number", session.getAttribute("number"));
+		
+		if(session.getAttribute("regStart") == null) {
+			Calendar cal = Calendar.getInstance();
+			cal.add(Calendar.YEAR, -1);
+			session.setAttribute("regStart", new SimpleDateFormat("dd/MM/yyyy").format(cal.getTime()));
+		}
+		if(session.getAttribute("regEnd") == null) {
+			session.setAttribute("regEnd", new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
+		}
+		
+		model.addAttribute("regStart", session.getAttribute("regStart"));
+		model.addAttribute("regEnd", session.getAttribute("regEnd"));
 		
 		return "index";
 	}
@@ -140,6 +155,25 @@ public class SpringSessionController {
 		else {
 			request.getSession().setAttribute("queryResults", 
 					prettyPrintSearchResult(redisService.searchCardNumberWithQueryBuilders(number)));
+		}
+		
+		return "redirect:/";
+	}
+
+	@PostMapping("/searchRegistrationDate")
+	public String searchRegistrationDate(HttpServletRequest request) {
+		request.getSession().setAttribute("regStart", request.getParameter("regStart"));
+		request.getSession().setAttribute("regEnd", request.getParameter("regEnd"));
+		String regStart = request.getParameter("regStart").trim();
+		String regEnd = request.getParameter("regEnd").trim();
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+		
+		try {
+			request.getSession().setAttribute("queryResults", 
+					prettyPrintSearchResult(redisService.searchRegistrationBetweenDateWithQueryBuilders(sdf.parse(regStart), sdf.parse(regEnd))));
+		} catch(Exception ex) {
+			ex.printStackTrace();
 		}
 		
 		return "redirect:/";
